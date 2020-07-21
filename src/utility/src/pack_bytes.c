@@ -53,6 +53,7 @@ void symbolreader_reset(symbolreader          _r,
                         const unsigned char * _src,
                         unsigned int          _src_len)
 {
+    printf("symbolreader reset with src_len %d\n", _src_len);
     _r->src = _src;
     _r->src_len = _src_len;
     _r->src_index = 0;
@@ -71,12 +72,14 @@ int symbolreader_read(symbolreader   _r,
                       unsigned int   _len,
                       unsigned int * _out)
 {
-    if (_r->src_index + _len > _r->src_len) {
-        return -1;
+    unsigned int read_len = _len;
+    unsigned int available = _r->src_len - _r->src_index;
+    if (read_len > available) {
+        read_len = available;
     }
 
-    liquid_unpack_array(_r->src, _r->src_len, _r->src_index, _len, _out);
-    _r->src_index += _len;
+    liquid_unpack_array(_r->src, _r->src_len, _r->src_index, read_len, _out);
+    _r->src_index += read_len;
 
     return _r->src_index != _r->src_len;
 }
@@ -111,6 +114,8 @@ void symbolwriter_reset(symbolwriter _w,
         n++;
     }
 
+
+    printf("symbolwriter reset with dst_len %d\n", _len);
     _w->dst = (unsigned char *)realloc(_w->dst, n);
     memset(_w->dst, 0, n);
     _w->dst_len = _len;
@@ -131,12 +136,15 @@ int symbolwriter_write(symbolwriter _w,
                        unsigned int _len,
                        unsigned int _symbol)
 {
-    if (_w->dst_index + _len > _w->dst_len) {
-        return -1;
+
+    unsigned int write_len = _len;
+    unsigned int available = _w->dst_len - _w->dst_index;
+    if (write_len > available) {
+        write_len = available;
     }
 
-    liquid_pack_array(_w->dst, _w->dst_len, _w->dst_index, _len, _symbol);
-    _w->dst_index += _len;
+    liquid_pack_array(_w->dst, _w->dst_len, _w->dst_index, write_len, _symbol);
+    _w->dst_index += write_len;
 
     return _w->dst_index != _w->dst_len;
 }

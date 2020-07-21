@@ -31,6 +31,7 @@ static fskframegenprops_s fskframegenprops_header_default = {
 };
 
 enum state {
+    STATE_NOT_ASSEMBLED,    // awaiting assemble()
     STATE_PREAMBLE,         // preamble
     STATE_HEADER,           // header
     STATE_PAYLOAD,          // payload (frame)
@@ -91,10 +92,10 @@ fskframegen fskframegen_create(fskframegenprops_s * _props,
     q->ramp_len = 12;
     q->tail_len = 12;
 
-    q->preamble_ms = msequence_create(6, 0x6d, 1);
+    q->preamble_ms = msequence_create(3, 0x000d, 1);
     q->preamble_mod = fskmod_create(1, FSKFRAME_PRE_K, q->bandwidth);
     q->preamble_samples = (liquid_float_complex *)malloc(FSKFRAME_PRE_K * sizeof(liquid_float_complex));
-    q->preamble_len = 63 * FSKFRAME_PRE_K;
+    q->preamble_len = 7 * FSKFRAME_PRE_K;
 
     q->header_reader = symbolreader_create();
     q->header_mod = NULL;
@@ -148,7 +149,7 @@ void fskframegen_reset(fskframegen _q)
     _q->sample_counter = 0;
     _q->frame_assembled = 0;
     _q->frame_complete = 0;
-    _q->state = STATE_PREAMBLE;
+    _q->state = STATE_NOT_ASSEMBLED;
 }
 
 int fskframegen_is_assembled(fskframegen _q)
@@ -295,6 +296,7 @@ void fskframegen_reconfigure(fskframegen _q)
         num_payload_symbols++;
     }
     _q->payload_len = _q->payload_props.samples_per_symbol * num_payload_symbols;
+    printf("payload dec len %d enc len %d symbols %d\n", _q->payload_msg_len, _q->payload_enc_len, _q->payload_len);
 }
 
 void fskframegen_reconfigure_header(fskframegen _q)
@@ -322,6 +324,8 @@ void fskframegen_reconfigure_header(fskframegen _q)
         num_header_symbols++;
     }
     _q->header_len = _q->header_props.samples_per_symbol * num_header_symbols;
+
+    printf("header dec len %d enc len %d symbols %d\n", dec_len, _q->header_enc_len, _q->header_len);
 }
 
 void fskframegen_assemble(fskframegen           _q,
@@ -361,11 +365,13 @@ void fskframegen_assemble(fskframegen           _q,
     printf("\n");
     */
 
+    symbolreader_reset(_q->header_reader, _q->header_enc, 8*_q->header_enc_len);
     fskframegen_reconfigure(_q);
 
     packetizer_encode(_q->payload_packetizer, _payload, _q->payload_enc);
 
     _q->frame_assembled = 1;
+    _q->state = STATE_PREAMBLE;
     /*
     printf("frame assembled\n");
     printf("bandwidth %.2f\n", _q->bandwidth);
@@ -385,12 +391,13 @@ int fskframegen_write_samples(fskframegen           _q,
 {
     unsigned int i;
     for (i = 0; i < _buffer_len; ) {
-        if (!_q->frame_assembled) {
-            memset(_buffer, 0, _buffer_len);
-            break;
-        }
         unsigned int written;
         switch (_q->state) {
+        case STATE_NOT_ASSEMBLED:
+            printf("not assembled, dumping\n");
+            written = _buffer_len - i;
+            memset(_buffer, 0, written * sizeof(liquid_float_complex));
+            break;
         case STATE_PREAMBLE:
             written = fskframegen_write_preamble(_q, _buffer, _buffer_len - i);
             break;
@@ -420,6 +427,8 @@ unsigned int fskframegen_write_preamble(fskframegen            _q,
     if (num_samples > _buffer_len) {
         num_samples = _buffer_len;
     }
+
+    printf("writing preamble\n");
 
     /*
     printf("preamble_samples:");
@@ -512,6 +521,7 @@ unsigned int fskframegen_write_payload(fskframegen            _q,
         _q->sample_counter = 0;
         _q->frame_complete = 1;
         _q->frame_assembled = 0;
+        _q->state = STATE_NOT_ASSEMBLED;
     }
 
     return num_samples;

@@ -184,6 +184,7 @@ void fskframesync_destroy(fskframesync _q)
 
 void fskframesync_reset(fskframesync _q)
 {
+    printf("resetting\n");
     qdetector_cccf_reset(_q->detector);
 
     nco_crcf_reset(_q->mixer);
@@ -215,27 +216,31 @@ void fskframesync_build_preamble(fskframesync _q)
         _q->detector = NULL;
     }
 
-    _q->preamble_len = 63 * FSKFRAME_PRE_K;
+    _q->preamble_len = 7 * FSKFRAME_PRE_K;
 
     _q->preamble_rx = (liquid_float_complex *)realloc(_q->preamble_rx, _q->preamble_len * sizeof(liquid_float_complex));
     liquid_float_complex * preamble_samples = (liquid_float_complex *)calloc(_q->preamble_len, sizeof(liquid_float_complex));
     fskmod preamble_mod = fskmod_create(1, FSKFRAME_PRE_K, _q->bandwidth);
-    msequence ms = msequence_create(6, 0x6d, 1);
+    msequence ms = msequence_create(3, 0x000d, 1);
     /*
     printf("sync preamble:");
     */
-    for (i = 0; i < 63; i++) {
+    for (i = 0; i < 7; i++) {
         fskmod_modulate(preamble_mod, msequence_advance(ms), preamble_samples + (i * FSKFRAME_PRE_K));
         /*
         printf(" %.4f %.4f %.4f %.4f", preamble_samples[i * FSKFRAME_PRE_K], preamble_samples[i * FSKFRAME_PRE_K + 1], preamble_samples[i * FSKFRAME_PRE_K + 2], preamble_samples[i * FSKFRAME_PRE_K + 3]);
         */
     }
+
+    for (i = 0; i < 12; i++) {
+        preamble_samples[i] *= hamming(i, 2 * 12);
+    }
     /*
     printf("\n");
     */
     msequence_destroy(ms);
-    _q->detector = qdetector_cccf_create(preamble_samples, 64);
-    qdetector_cccf_set_threshold(_q->detector, 0.5f);
+    _q->detector = qdetector_cccf_create(preamble_samples, 7 * FSKFRAME_PRE_K);
+    qdetector_cccf_set_threshold(_q->detector, 0.55f);
     fskmod_destroy(preamble_mod);
     free(preamble_samples);
 }
@@ -310,6 +315,7 @@ int fskframesync_set_header_props(fskframesync _q, fskframegenprops_s * _props)
 void fskframesync_execute(fskframesync _q, liquid_float_complex * _buffer, unsigned int _buffer_len)
 {
     unsigned int i;
+    // printf("%d samples\n", _buffer_len);
     for (i = 0; i < _buffer_len; ) {
         unsigned int read;
         switch (_q->state) {
@@ -328,6 +334,11 @@ void fskframesync_execute(fskframesync _q, liquid_float_complex * _buffer, unsig
         case FSKFRAMESYNC_STATE_RXPAYLOAD:
             // receive payload symbols
             read = fskframesync_execute_rxpayload(_q, _buffer, _buffer_len - i);
+            /*
+            if (_q->state != FSKFRAMESYNC_STATE_RXPAYLOAD) {
+                memset(_buffer + read, 0, (_buffer_len - (i + read)) * sizeof(liquid_float_complex));
+            }
+            */
             break;
         default:
             fprintf(stderr, "error: fskframesync_exeucte(), unknown/unsupported state\n");
@@ -343,7 +354,8 @@ unsigned int fskframesync_execute_seekpn(fskframesync _q,
                                          unsigned int _buffer_len)
 {
     unsigned int i;
-    float complex * v;
+    float complex * v = NULL;
+    // printf("seekpn 0: %.2f %.2f %.2f %.2f %.2f\n", crealf(_buffer[0]));
     for (i = 0; i < _buffer_len; i++) {
         // push through pre-demod synchronizer
         v = qdetector_cccf_execute(_q->detector, _buffer[i]);
@@ -356,6 +368,8 @@ unsigned int fskframesync_execute_seekpn(fskframesync _q,
     if (v == NULL) {
         return i;
     }
+
+    printf("frame detected\n");
 
     // get estimates
     _q->tau_hat   = qdetector_cccf_get_tau(_q->detector);
@@ -391,6 +405,7 @@ unsigned int fskframesync_execute_seekpn(fskframesync _q,
 
     // run buffered samples through synchronizer
     unsigned int buf_len = qdetector_cccf_get_buf_len(_q->detector);
+    printf("preamble passthrough\n");
     fskframesync_execute(_q, v, buf_len);
 
     return i;
@@ -460,6 +475,9 @@ unsigned int fskframesync_execute_rxpreamble(fskframesync _q,
 
         if (_q->sample_counter == _q->preamble_len) {
             // printf("rxheader\n");
+            unsigned int header_enc_len = packetizer_get_enc_msg_len(_q->header_packetizer);
+            // printf("sync header enc len: %d\n", header_enc_len);
+            symbolwriter_reset(_q->header_enc_writer, 8*header_enc_len);
             _q->sample_counter = 0;
             _q->state = FSKFRAMESYNC_STATE_RXHEADER;
             assert(i == num_samples - 1);
@@ -472,6 +490,8 @@ unsigned int fskframesync_execute_rxpreamble(fskframesync _q,
 void fskframesync_handle_invalid_header(fskframesync _q)
 {
     _q->framedatastats.num_frames_detected++;
+
+    printf("invalid header\n");
 
     if (_q->callback != NULL) {
         // TODO revisit these stats
@@ -618,6 +638,7 @@ unsigned int fskframesync_execute_rxheader(fskframesync _q,
         if (_q->header_valid) {
             _q->sample_counter = 0;
             // printf("rxpayload\n");
+            printf("header valid\n");
             _q->state = FSKFRAMESYNC_STATE_RXPAYLOAD;
         } else {
             // printf("invalid header\n");
@@ -633,6 +654,7 @@ void fskframesync_decode_payload(fskframesync _q)
     const unsigned char * encoded = symbolwriter_bytes(_q->payload_enc_writer);
     _q->payload_valid = packetizer_decode(_q->payload_packetizer, encoded, _q->payload_dec);
 
+    printf("decoding payload\n");
     if (_q->callback != NULL) {
         _q->framesyncstats.evm           = 0.f;
         _q->framesyncstats.rssi          = 20 * log10f(_q->gamma_hat);
@@ -692,4 +714,125 @@ unsigned int fskframesync_execute_rxpayload(fskframesync _q,
     }
 
     return num_samples;
+}
+
+// enable debugging
+void fskframesync_debug_enable(fskframesync _q)
+{
+    // create debugging objects if necessary
+#if DEBUG_FSKFRAMESYNC
+    /*
+    if (_q->debug_objects_created)
+        return;
+
+    // create debugging objects
+    _q->debug_x = windowcf_create(DEBUG_BUFFER_LEN);
+
+    // set debugging flags
+    _q->debug_enabled = 1;
+    _q->debug_objects_created = 1;
+    */
+#else
+    fprintf(stderr,"fskframesync_debug_enable(): compile-time debugging disabled\n");
+#endif
+}
+
+// disable debugging
+void fskframesync_debug_disable(fskframesync _q)
+{
+    // disable debugging
+#if DEBUG_FSKFRAMESYNC
+    /*
+    _q->debug_enabled = 0;
+    */
+#else
+    fprintf(stderr,"fskframesync_debug_enable(): compile-time debugging disabled\n");
+#endif
+}
+
+
+// print debugging information
+void fskframesync_debug_print(fskframesync _q,
+                               const char *  _filename)
+{
+#if DEBUG_FSKFRAMESYNC
+    /*
+    if (!_q->debug_objects_created) {
+        fprintf(stderr,"error: fskframesync_debug_print(), debugging objects don't exist; enable debugging first\n");
+        return;
+    }
+    */
+    unsigned int i;
+    liquid_float_complex * rc;
+    FILE* fid = fopen(_filename,"w");
+    fprintf(fid,"%% %s: auto-generated file", _filename);
+    fprintf(fid,"\n\n");
+    fprintf(fid,"clear all;\n");
+    fprintf(fid,"close all;\n\n");
+    fprintf(fid,"n = %u;\n", DEBUG_BUFFER_LEN);
+    
+    // main figure
+    fprintf(fid,"figure('Color','white','position',[100 100 800 600]);\n");
+
+    // write x
+    fprintf(fid,"x = zeros(1,n);\n");
+    windowcf_read(_q->debug_x, &rc);
+    for (i=0; i<DEBUG_BUFFER_LEN; i++)
+        fprintf(fid,"x(%4u) = %12.4e + j*%12.4e;\n", i+1, crealf(rc[i]), cimagf(rc[i]));
+    fprintf(fid,"\n\n");
+    fprintf(fid,"subplot(3,2,1:2);\n");
+    fprintf(fid,"plot(1:length(x),real(x), 1:length(x),imag(x));\n");
+    fprintf(fid,"grid on;\n");
+    fprintf(fid,"xlabel('sample index');\n");
+    fprintf(fid,"ylabel('received signal, x');\n");
+
+    // write p/n sequence
+    fprintf(fid,"preamble_pn = zeros(1,64);\n");
+    rc = _q->preamble_pn;
+    for (i=0; i<64; i++)
+        fprintf(fid,"preamble_pn(%4u) = %12.4e + 1i*%12.4e;\n", i+1, crealf(rc[i]), cimagf(rc[i]));
+
+    // write p/n symbols
+    fprintf(fid,"preamble_rx = zeros(1,64);\n");
+    rc = _q->preamble_rx;
+    for (i=0; i<64; i++)
+        fprintf(fid,"preamble_rx(%4u) = %12.4e + 1i*%12.4e;\n", i+1, crealf(rc[i]), cimagf(rc[i]));
+
+    // write recovered header symbols (after qpilotsync)
+    fprintf(fid,"header_mod = zeros(1,%u);\n", _q->header_mod_len);
+    rc = _q->header_mod;
+    for (i=0; i<_q->header_mod_len; i++)
+        fprintf(fid,"header_mod(%4u) = %12.4e + j*%12.4e;\n", i+1, crealf(rc[i]), cimagf(rc[i]));
+
+    // write raw payload symbols
+    fprintf(fid,"payload_sym = zeros(1,%u);\n", _q->payload_sym_len);
+    rc = _q->payload_sym;
+    for (i=0; i<_q->payload_sym_len; i++)
+        fprintf(fid,"payload_sym(%4u) = %12.4e + j*%12.4e;\n", i+1, crealf(rc[i]), cimagf(rc[i]));
+
+    fprintf(fid,"subplot(3,2,[3 5]);\n");
+    fprintf(fid,"plot(real(header_mod),imag(header_mod),'o');\n");
+    fprintf(fid,"xlabel('in-phase');\n");
+    fprintf(fid,"ylabel('quadrature phase');\n");
+    fprintf(fid,"grid on;\n");
+    fprintf(fid,"axis([-1 1 -1 1]*1.5);\n");
+    fprintf(fid,"axis square;\n");
+    fprintf(fid,"title('Received Header Symbols');\n");
+
+    fprintf(fid,"subplot(3,2,[4 6]);\n");
+    fprintf(fid,"plot(real(payload_sym),imag(payload_sym),'+');\n");
+    fprintf(fid,"xlabel('in-phase');\n");
+    fprintf(fid,"ylabel('quadrature phase');\n");
+    fprintf(fid,"grid on;\n");
+    fprintf(fid,"axis([-1 1 -1 1]*1.5);\n");
+    fprintf(fid,"axis square;\n");
+    fprintf(fid,"title('Received Payload Symbols');\n");
+
+    fprintf(fid,"\n\n");
+    fclose(fid);
+
+    printf("fskframesync/debug: results written to %s\n", _filename);
+#else
+    fprintf(stderr,"fskframesync_debug_print(): compile-time debugging disabled\n");
+#endif
 }
