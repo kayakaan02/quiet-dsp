@@ -13,10 +13,6 @@ set(LIQUID_VERSION ${CMAKE_MATCH_1})
 
 message("-- Configuring for liquid-dsp ${LIQUID_VERSION}")
 
-if (CMAKE_CROSSCOMPILING AND NOT HOST_C_COMPILER)
-    message(FATAL_ERROR "Please, define HOST_C_COMPILER to the path of the host C compiler.")
-endif ()
-
 include(CheckCPUID)
 include(CheckIncludeFile)
 include(CheckLibraryExists)
@@ -36,6 +32,8 @@ option(LIQUID_BUILD_SHARED "Build shared library" ON)
 option(LIQUID_BUILD_STATIC "Build static library" ON)
 option(LIQUID_BUILD_EXAMPLES "Build examples" ON)
 option(LIQUID_BUILD_SANDBOX "Build sandbox" ON)
+option(LIQUID_BUILD_TESTS "Build tests" ON)
+option(LIQUID_BUILD_BENCHMARKS "Build benchmarks" ON)
 option(LIQUID_FORCE_X86_MMX "Force MMX (useful for cross-compiling)" OFF)
 option(LIQUID_FORCE_X86_SSE "Force SSE (useful for cross-compiling)" OFF)
 option(LIQUID_FORCE_X86_SSE2 "Force SSE2 (useful for cross-compiling)" OFF)
@@ -48,6 +46,11 @@ option(LIQUID_FORCE_PPC_ALTIVEC "Force AltiVec (useful for cross-compiling)" OFF
 option(LIQUID_FORCE_ARM_NEON "Force NEON (useful for cross-compiling)" OFF)
 option(LIQUID_FORCE_ARM64_NEON "Force AArch64 NEON (useful for cross-compiling)" OFF)
 option(LIQUID_CXX "Compile in C++ mode. Always on for Windows/MSVC." OFF)
+
+if (CMAKE_CROSSCOMPILING AND LIQUID_BUILD_TESTS AND NOT HOST_C_COMPILER)
+    message(FATAL_ERROR "Please, define HOST_C_COMPILER to the path of the host C compiler.")
+endif ()
+
 
 
 CHECK_INCLUDE_FILE(sys/resource.h HAVE_SYS_RESOURCE_H)
@@ -384,13 +387,13 @@ set(fec_AUTOTESTS_SOURCES
     )
 
 set(fec_BENCHMARKS_SOURCES
-	src/fec/bench/crc_benchmark.c
-	src/fec/bench/fec_encode_benchmark.c
-	src/fec/bench/fec_decode_benchmark.c
-	src/fec/bench/fecsoft_decode_benchmark.c
-	src/fec/bench/sumproduct_benchmark.c
-	src/fec/bench/interleaver_benchmark.c
-	src/fec/bench/packetizer_decode_benchmark.c
+        src/fec/bench/crc_benchmark.c
+        src/fec/bench/fec_encode_benchmark.c
+        src/fec/bench/fec_decode_benchmark.c
+        src/fec/bench/fecsoft_decode_benchmark.c
+        src/fec/bench/sumproduct_benchmark.c
+        src/fec/bench/interleaver_benchmark.c
+        src/fec/bench/packetizer_decode_benchmark.c
     )
 
 #
@@ -467,52 +470,52 @@ set(benchmark_EXTRA_SOURCES ${benchmark_EXTRA_SOURCES}
 # MODULE : filter
 #
 set(filter_SOURCES
-	src/filter/src/bessel.c
-	src/filter/src/butter.c
-	src/filter/src/cheby1.c
-	src/filter/src/cheby2.c
-	src/filter/src/ellip.c
-	src/filter/src/filter_rrrf.c
-	src/filter/src/filter_crcf.c
-	src/filter/src/filter_cccf.c
-	src/filter/src/firdes.c
-	src/filter/src/firdespm.c
-	src/filter/src/fnyquist.c
-	src/filter/src/gmsk.c
-	src/filter/src/group_delay.c
-	src/filter/src/hM3.c
-	src/filter/src/iirdes.pll.c
-	src/filter/src/iirdes.c
-	src/filter/src/lpc.c
-	src/filter/src/rcos.c
-	src/filter/src/rkaiser.c
-	src/filter/src/rrcos.c
+        src/filter/src/bessel.c
+        src/filter/src/butter.c
+        src/filter/src/cheby1.c
+        src/filter/src/cheby2.c
+        src/filter/src/ellip.c
+        src/filter/src/filter_rrrf.c
+        src/filter/src/filter_crcf.c
+        src/filter/src/filter_cccf.c
+        src/filter/src/firdes.c
+        src/filter/src/firdespm.c
+        src/filter/src/fnyquist.c
+        src/filter/src/gmsk.c
+        src/filter/src/group_delay.c
+        src/filter/src/hM3.c
+        src/filter/src/iirdes.pll.c
+        src/filter/src/iirdes.c
+        src/filter/src/lpc.c
+        src/filter/src/rcos.c
+        src/filter/src/rkaiser.c
+        src/filter/src/rrcos.c
     )
 
 set(filter_AUTOTESTS_SOURCES
-	src/filter/tests/fftfilt_xxxf_autotest.c
-	src/filter/tests/filter_crosscorr_autotest.c
-	src/filter/tests/firdecim_xxxf_autotest.c
-	src/filter/tests/firdes_autotest.c
-	src/filter/tests/firdespm_autotest.c
-	src/filter/tests/firfilt_xxxf_autotest.c
-	src/filter/tests/firhilb_autotest.c
-	src/filter/tests/firinterp_autotest.c
-	src/filter/tests/firpfb_autotest.c
-	src/filter/tests/groupdelay_autotest.c
-	src/filter/tests/iirdes_autotest.c
-	src/filter/tests/iirfilt_xxxf_autotest.c
-	src/filter/tests/iirfiltsos_rrrf_autotest.c
-	src/filter/tests/msresamp_crcf_autotest.c
-	src/filter/tests/resamp_crcf_autotest.c
-	src/filter/tests/resamp2_crcf_autotest.c
-	src/filter/tests/rresamp_crcf_autotest.c
-	src/filter/tests/symsync_crcf_autotest.c
-	src/filter/tests/symsync_rrrf_autotest.c
+        src/filter/tests/fftfilt_xxxf_autotest.c
+        src/filter/tests/filter_crosscorr_autotest.c
+        src/filter/tests/firdecim_xxxf_autotest.c
+        src/filter/tests/firdes_autotest.c
+        src/filter/tests/firdespm_autotest.c
+        src/filter/tests/firfilt_xxxf_autotest.c
+        src/filter/tests/firhilb_autotest.c
+        src/filter/tests/firinterp_autotest.c
+        src/filter/tests/firpfb_autotest.c
+        src/filter/tests/groupdelay_autotest.c
+        src/filter/tests/iirdes_autotest.c
+        src/filter/tests/iirfilt_xxxf_autotest.c
+        src/filter/tests/iirfiltsos_rrrf_autotest.c
+        src/filter/tests/msresamp_crcf_autotest.c
+        src/filter/tests/resamp_crcf_autotest.c
+        src/filter/tests/resamp2_crcf_autotest.c
+        src/filter/tests/rresamp_crcf_autotest.c
+        src/filter/tests/symsync_crcf_autotest.c
+        src/filter/tests/symsync_rrrf_autotest.c
     )
 
 set(autotest_EXTRA_SOURCES ${autotest_EXTRA_SOURCES}
-	src/filter/tests/fftfilt_runtest.c
+        src/filter/tests/fftfilt_runtest.c
 
     src/filter/tests/data/fftfilt_rrrf_data_h4x256.c
     src/filter/tests/data/fftfilt_crcf_data_h4x256.c
@@ -614,6 +617,8 @@ set(framing_SOURCES
     src/framing/src/framesync64.c
     src/framing/src/flexframegen.c
     src/framing/src/flexframesync.c
+    src/framing/src/fskframegen.c
+    src/framing/src/fskframesync.c
     src/framing/src/gmskframegen.c
     src/framing/src/gmskframesync.c
     src/framing/src/msourcecf.c
@@ -1026,15 +1031,17 @@ endif ()
 #
 # Build the autoscript tool, needed by autotest and benchmark.
 #
-if (CMAKE_CROSSCOMPILING)
-    #
-    # Cross-compile the tool with the host compiler, the CMake Toolchain file shall
-    # define this variable to point to the host compiler.
-    #
-    add_custom_target(autoscript
-                      COMMAND ${HOST_C_COMPILER} -o autoscript "${CMAKE_CURRENT_SOURCE_DIR}/scripts/autoscript.c" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/main.c")
-else ()
-    add_executable(autoscript scripts/autoscript.c scripts/main.c)
+if (LIQUID_BUILD_TESTS)
+    if (CMAKE_CROSSCOMPILING)
+        #
+        # Cross-compile the tool with the host compiler, the CMake Toolchain file shall
+        # define this variable to point to the host compiler.
+        #
+        add_custom_target(autoscript
+                          COMMAND ${HOST_C_COMPILER} -o autoscript "${CMAKE_CURRENT_SOURCE_DIR}/scripts/autoscript.c" "${CMAKE_CURRENT_SOURCE_DIR}/scripts/main.c")
+    else ()
+        add_executable(autoscript scripts/autoscript.c scripts/main.c)
+    endif ()
 endif ()
 
 #
@@ -1076,26 +1083,28 @@ if (LIQUID_CXX)
     set_source_files_properties(${autotest_SOURCES} PROPERTIES LANGUAGE CXX)
 endif()
 
-add_custom_target(autotest_include
-                  COMMAND "$<TARGET_FILE:autoscript>" "${OS_PATH_SEP}" "autotest" ${autotest_ALL_SOURCES} > "${CMAKE_CURRENT_BINARY_DIR}/autotest_include.h"
-                  DEPENDS autoscript
-                  BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/autotest_include.h"
-                  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-                  )
+if (LIQUID_BUILD_TESTS)
+    add_custom_target(autotest_include
+                      COMMAND "$<TARGET_FILE:autoscript>" "${OS_PATH_SEP}" "autotest" ${autotest_ALL_SOURCES} > "${CMAKE_CURRENT_BINARY_DIR}/autotest_include.h"
+                      DEPENDS autoscript
+                      BYPRODUCTS "${CMAKE_CURRENT_BINARY_DIR}/autotest_include.h"
+                      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                      )
 
-add_executable(autotest EXCLUDE_FROM_ALL ${autotest_SOURCES})
-set_property(TARGET autotest PROPERTY COMPILE_FLAGS "${_EXTRA_C_FLAGS}")
-add_dependencies(autotest autotest_include)
-target_link_libraries(autotest ${LIQUID_LIBRARY})
-if (GETOPT_LIBRARY)
-    target_link_libraries(autotest ${GETOPT_LIBRARY})
-endif(GETOPT_LIBRARY)
+    add_executable(autotest EXCLUDE_FROM_ALL ${autotest_SOURCES})
+    set_property(TARGET autotest PROPERTY COMPILE_FLAGS "${_EXTRA_C_FLAGS}")
+    add_dependencies(autotest autotest_include)
+    target_link_libraries(autotest ${LIQUID_LIBRARY})
+    if (GETOPT_LIBRARY)
+        target_link_libraries(autotest ${GETOPT_LIBRARY})
+    endif(GETOPT_LIBRARY)
 
-add_custom_target(autotest_run
-                  COMMAND "$<TARGET_FILE:autotest>"
-                  DEPENDS autotest
-                  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-                  )
+    add_custom_target(autotest_run
+                      COMMAND "$<TARGET_FILE:autotest>"
+                      DEPENDS autotest
+                      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+                      )
+endif ()
 
 #
 # Benchmark
@@ -1132,6 +1141,7 @@ if (HAVE_SYS_RESOURCE_H)
         ${benchmark_EXTRA_SOURCES}
         )
 
+if (LIQUID_BUILD_BENCHMARKS)
     add_custom_target(benchmark_include
                       COMMAND "$<TARGET_FILE:autoscript>" "${OS_PATH_SEP}" "benchmark" ${benchmark_ALL_SOURCES} > "${CMAKE_CURRENT_BINARY_DIR}/benchmark_include.h"
                       DEPENDS autoscript
@@ -1142,6 +1152,7 @@ if (HAVE_SYS_RESOURCE_H)
     add_executable(benchmark EXCLUDE_FROM_ALL ${benchmark_SOURCES})
     add_dependencies(benchmark benchmark_include)
     target_link_libraries(benchmark ${LIQUID_LIBRARY})
+endif()
 else ()
     message(WARNING "Benchmark suite cannot be compiled because sys/resource.h header hasn't been found.")
 endif ()
