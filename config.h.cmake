@@ -2,7 +2,7 @@
 #define __LIQUID_CONFIG_H__
 
 /* Support AVX (Advanced Vector Extensions) instructions */
-#cmakedefine HAVE_AVX @HAVE_AVX@
+#cmakedefine01 HAVE_AVX
 
 /* Define to 1 if you have the <complex.h> header file. */
 #cmakedefine HAVE_COMPLEX_H @HAVE_COMPLEX_H@
@@ -38,7 +38,7 @@
 #cmakedefine HAVE_MMINTRIN_H @HAVE_MMINTRIN_H@
 
 /* Support MMX instructions */
-#cmakedefine HAVE_MMX @HAVE_MMX@
+#cmakedefine01 HAVE_MMX
 
 /* Define to 1 if you have the <pmmintrin.h> header file. */
 #cmakedefine HAVE_PMMINTRIN_H @HAVE_PMMINTRIN_H@
@@ -46,23 +46,23 @@
 /* Define to 1 if you have the <smmintrin.h> header file. */
 #cmakedefine HAVE_SMMINTRIN_H @HAVE_SMMINTRIN_H@
 
-/* Support SSE (Streaming SIMD Extensions) instructions */
-#cmakedefine HAVE_SSE @HAVE_SSE@
+/* Define to 1 if you support SSE (Streaming SIMD Extensions) instructions */
+#cmakedefine01 HAVE_SSE
 
 /* Support SSE2 (Streaming SIMD Extensions 2) instructions */
-#cmakedefine HAVE_SSE2 @HAVE_SSE2@
+#cmakedefine01 HAVE_SSE2
 
-/* Support SSE3 (Streaming SIMD Extensions 3) instructions */
-#cmakedefine HAVE_SSE3 @HAVE_SSE3@
+/* Define to 1 if you support SSE3 (Streaming SIMD Extensions 3) instructions */
+#cmakedefine01 HAVE_SSE3
 
 /* Support SSE4.1 (Streaming SIMD Extensions 4.1) instructions */
-#cmakedefine HAVE_SSE41 @HAVE_SSE41@
+#cmakedefine01 HAVE_SSE41
 
 /* Support SSE4.2 (Streaming SIMD Extensions 4.2) instructions */
-#cmakedefine HAVE_SSE42 @HAVE_SSE42@
+#cmakedefine01 HAVE_SSE42
 
 /* Support SSSE3 (Supplemental Streaming SIMD Extensions 3) instructions */
-#cmakedefine HAVE_SSSE3 @HAVE_SSSE3@
+#cmakedefine01 HAVE_SSSE3
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #cmakedefine HAVE_STDINT_H @HAVE_STDINT_H@
