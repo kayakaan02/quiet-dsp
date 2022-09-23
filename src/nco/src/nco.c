@@ -395,7 +395,7 @@ void NCO(_mix_all_down)(double realEnter[], double imagEnter[], double realOut[]
 
 
     printf("storing input in my arrays\n\n");
-    for (int i = 0; i < num_samples; tp++) {
+    for (int i = 0; i < num_samples; i++) {
         x[i] = (realEnter[i], imagEnter[i]);
         //cimagf(x[tp]) = imagEnter[tp];
         //x[tp].real = realEnter[tp];
@@ -427,7 +427,7 @@ void NCO(_mix_all_down)(double realEnter[], double imagEnter[], double realOut[]
 
 
 
-    printf("set phase started\n")
+    printf("set phase started\n");
     //set phase icin _phi lazim
     NCO(_set_phase)(p, ncoPhaseFreq);
     printf("done.\n\n");
