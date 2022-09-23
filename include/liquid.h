@@ -6225,6 +6225,14 @@ void NCO(_mix_block_down)(NCO() _q,                             \
                           TC *_x,                               \
                           TC *_y,                               \
                           unsigned int _N);                     \
+/* do all the steps required to mix_block_down          */      \
+void NCO(_mix_all_down)(double realEnter[],                     \
+                        double imagEnter[],                     \
+                        double realOut[],                       \
+                        double imagOut[],                       \
+                        long unsigned int num_samples,          \
+                        float ncoPhaseFreq,                     \
+                        float ncoSetFreq);                      \
 
 // Define nco APIs
 LIQUID_NCO_DEFINE_API(NCO_MANGLE_FLOAT, float, liquid_float_complex)
