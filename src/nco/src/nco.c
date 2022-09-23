@@ -383,3 +383,86 @@ void NCO(_compute_sincos_vco)(NCO() _q)
     _q->cosine = COS(_q->theta);
 }
 
+//create, set phase, set frequency, mix block down
+void NCO(_mix_all_down)(double realEnter[], double imagEnter[], double realOut[], double imagOut[], long unsigned int num_samples, float ncoPhaseFreq, float ncoSetFreq) {
+
+    printf("malloc array started\n");
+    liquid_float_complex* x = (liquid_float_complex*)malloc(num_samples * sizeof(liquid_float_complex));
+    liquid_float_complex* y = (liquid_float_complex*)malloc(num_samples * sizeof(liquid_float_complex));
+    printf("done.\n\n");
+
+
+
+
+    printf("storing input in my arrays\n\n");
+    for (int i = 0; i < num_samples; tp++) {
+        x[i] = (realEnter[i], imagEnter[i]);
+        //cimagf(x[tp]) = imagEnter[tp];
+        //x[tp].real = realEnter[tp];
+        //x[tp].imag = imagEnter[tp];
+    }
+    printf("done.\n\n");
+
+
+
+
+    printf("create started\n");
+    NCO() p = (NCO()) malloc(sizeof(struct NCO(_s)));
+
+    // initialize sine table
+    unsigned int i;
+    for (i = 0; i < 256; i++)
+        p->sintab[i] = SIN(2.0f * M_PI * (float)(i) / 256.0f);
+
+    // set default pll bandwidth
+    NCO(_pll_set_bandwidth)(p, NCO_PLL_BANDWIDTH_DEFAULT);
+
+    // set internal method
+    p->compute_sincos = &NCO(_compute_sincos_nco);
+
+    // reset object and return
+    NCO(_reset)(p);
+    printf("done.\n\n");
+
+
+
+
+    printf("set phase started\n")
+    //set phase icin _phi lazim
+    NCO(_set_phase)(p, ncoPhaseFreq);
+    printf("done.\n\n");
+
+
+
+
+    printf("set frequency started\n");
+    NCO(_set_frequency)(p, ncoSetFreq * M_PI);
+    printf("done.\n\n");
+
+
+
+
+    printf("mix block down started\n");
+    NCO(_mix_block_down)(p, x, y, num_samples);
+    printf("done.\n\n");
+
+
+
+
+    printf("storing results in output arrays\n");
+    for (int tp = 0; tp < num_samples; tp++) {
+        realOut[tp] = crealf(y[i]);
+        imagOut[tp] = cimagf(y[i]);
+    }
+    printf("done.\n\n");
+
+
+
+
+    printf("deleting arrays\n");
+    free(x);
+    free(y);
+    x = NULL;
+    y = NULL;
+    printf("done.\n\n");
+}
